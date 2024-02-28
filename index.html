@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Wikipedia Article</title>
+    <link rel="stylesheet" href="knowl.css">
+</head>
+<body>
+    <header>
+        <img src="Unknown.jpeg" alt="InfoExplorer Logo" id="company-logo">
+        <h1 id="company-name">InfoExplorer</h1>
+    </header>
+    <div id="welcome-screen">
+        <div class="welcome-container">
+            <button id="generate-article">Show Random Wikipedia Article</button>
+            <button id="view-saved">View Saved Topics</button>
+        </div>
+        
+
+    </div>
+    <div id="article-screen" style="display: none;">
+        <h1 id="article-title"></h1>
+        <p id="article-summary"></p> <!-- Element to display the article summary -->
+        <div class="image-container">
+            <img id="article-image1" src="" alt="Article Image 1">
+            <img id="article-image2" src="" alt="Article Image 2">
+        </div>
+        <button id="save-article">Save Article</button>
+        <button id="generate-another">Generate Another Article</button>
+        <button id="back-to-main">Back to Main</button>
+    </div>
+    
+    <div id="saved-articles-screen" style="display: none;">
+        <h1>Saved Topics</h1>
+        <div id="saved-articles"></div>
+        <button id="back-to-main_saved">Back to Main</button>
+        <button id="clear-topics">Clear Topics</button> <!-- Clear Topics button -->
+        
+    </div>
+    
+    <!-- Detailed Topic View -->
+<div id="detailed-topic-screen" style="display: none;">
+    <h1 id="detailed-topic-title"></h1>
+    <div class="image-container">
+        <img id="detailed-topic-image1" src="" alt="Detailed Topic Image 1">
+        <img id="detailed-topic-image2" src="" alt="Detailed Topic Image 2">
+    </div>
+    <button id="back-to-saved">Back to Saved Topics</button>
+</div>
+
+    <script src="app.js"></script>
+</body>
+</html>
