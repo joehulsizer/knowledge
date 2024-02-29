@@ -40,7 +40,7 @@ header {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     padding: 20px;
-    width: 80%;
+    width: 90%;
     max-width: 800px;
     margin: auto;
     text-align: center;
@@ -103,4 +103,42 @@ h1 {
 
 .topic-button:hover {
     background-color: #e9ecef;
+}
+#chat-container {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 300px;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+#chat-history {
+    height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.chat-message {
+    padding: 5px;
+    margin: 5px 0;
+    border-radius: 5px;
+    background-color: #e9ecef;
+}
+
+.chat-message.you {
+    text-align: right;
+}
+
+#chat-input {
+    width: calc(100% - 90px);
+    padding: 5px;
+}
+
+#send-chat {
+    width: 80px;
+    margin-left: 10px;
 }

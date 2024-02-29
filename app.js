@@ -4,6 +4,9 @@ function resetToWelcomeScreen() {
     document.getElementById('welcome-screen').style.display = 'block';
 }
 
+let chatSessionId = null;
+let chatHistory = [];
+
 // Set up event listeners only once, outside any other function
 document.getElementById('back-to-main').addEventListener('click', resetToWelcomeScreen);
 document.getElementById('back-to-main_saved').addEventListener('click', resetToWelcomeScreen);
@@ -56,6 +59,38 @@ document.getElementById('view-saved').addEventListener('click', function() {
     });
 });
 
+function formatSummaryText(summary) {
+    // Split the text into lines
+    let lines = summary.split('\n');
+    let formattedText = '';
+
+    lines.forEach(line => {
+        // Check if the line is a header
+        if (line.match(/(Key Concepts:|Potential Applications:)/)) {
+            formattedText += `<strong>${line}</strong><br>`;
+        // Check if the line is a list item
+        } else if (line.startsWith('-')) {
+            // Add an opening <ul> tag if this is the first list item
+            if (!formattedText.endsWith('</ul>') && !formattedText.includes('<ul>')) {
+                formattedText += '<ul>';
+            }
+            formattedText += `<li>${line.substring(1).trim()}</li>`;
+        } else {
+            // Add a closing </ul> tag if this is the end of a list
+            if (formattedText.includes('<ul>') && !line.startsWith('-')) {
+                formattedText += '</ul>';
+            }
+            formattedText += `${line}<br>`;
+        }
+    });
+
+    // Close the list if the summary ends with a list
+    if (formattedText.includes('<ul>') && !formattedText.endsWith('</ul>')) {
+        formattedText += '</ul>';
+    }
+
+    return formattedText;
+}
 // Handle article generation and display
 function generateRandomArticle() {
     document.getElementById('welcome-screen').style.display = 'none';
@@ -72,18 +107,44 @@ function generateRandomArticle() {
         .then(response => response.json())
         .then(data => {
             document.getElementById('article-title').textContent = data.title;
-            document.getElementById('article-summary').textContent = data.extract;
-            return fetch(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(data.title)}&format=json&origin=*`);
+            // Instead of setting the extract as the summary directly:
+            // document.getElementById('article-summary').textContent = data.extract;
+            // Use the title to generate a ChatGPT prompt:
+            const prompt = `
+            What is ${data.title}?
+            Explain ${data.title} in simple terms suitable for a middle schooler, focusing on key concepts and their relevance.
+    
+            Key Concepts:
+            Describe any fundamental concepts or terms in a straightforward manner.
+    
+            Potential Applications:
+            List some practical or real world applications or implications in bullet points.
+            `;            
+            return fetchChatGPTResponse(prompt).then(summary => {
+            document.getElementById('article-title').textContent = data.title;
+            let formattedSummary = formatSummaryText(summary);
+            document.getElementById('article-summary').innerHTML = formattedSummary;
+            return data;
+        })
+        .then(data => {
+            const title = data.title;
+            // Fetch images for title
+            return fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&format=json&pithumbsize=500&origin=*`);
         })
         .then(response => response.json())
         .then(data => {
-            images = data.parse.images.filter(image => image.endsWith('.jpg') || image.endsWith('.png')).slice(0, 2);
-            if (images.length > 0) {
-                return fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(images[0])}&prop=imageinfo&iiprop=url&format=json&origin=*`);
+            const pages = data.query.pages;
+            const page = pages[Object.keys(pages)[0]];
+            if (page.thumbnail) {
+                document.getElementById('article-image1').src = page.thumbnail.source;
+                document.getElementById('article-image1').style.display = 'block';
             } else {
                 document.getElementById('article-image1').style.display = 'none';
-                return Promise.reject('No suitable images found.');
             }
+        })
+        .catch(error => {
+            console.error('Error fetching images:', error);
+            document.getElementById('article-image1').style.display = 'none';
         })
         .then(response => response.json())
         .then(data => {
@@ -115,6 +176,7 @@ function generateRandomArticle() {
         document.getElementById('article-screen').style.display = 'block';
 
 }
+        )};
 
 // Handle saving articles
 // Handle saving articles
@@ -148,4 +210,74 @@ document.getElementById('clear-topics').addEventListener('click', function() {
     savedArticlesContainer.innerHTML = '';
     alert('All saved topics have been cleared.');
     resetToWelcomeScreen();
+});
+
+
+
+// Add event listener for the ChatGPT interaction
+document.getElementById('send-chat').addEventListener('click', function() {
+    const inputElement = document.getElementById('chat-input');
+    const chatQuery = inputElement.value;
+    inputElement.value = ''; // Clear input after sending
+
+    if (chatQuery.trim()) {
+        fetchChatGPTResponse(chatQuery).then(response => {
+            document.getElementById('article-summary').textContent = response;
+            document.getElementById('article-screen').style.display = 'block';
+        }).catch(error => {
+            console.error('Error communicating with ChatGPT:', error);
+            alert('Sorry, I am unable to respond at the moment.');
+        });
+    }
+});
+
+// Function to fetch response from ChatGPT
+function fetchChatGPTResponse(message) {
+    const apiKey = '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'; // Replace with your actual API key
+    return fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: "gpt-4", // Update according to the API documentation
+            messages: [{role: "user", content: message}]
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+        return data.choices[0].message.content;
+    })
+    .catch(error => {
+        console.error('API Error:', error);
+        return `API Error: ${error.message}`;
+    });
+}
+
+document.getElementById('learn-specific-topic').addEventListener('click', function() {
+    document.getElementById('specific-topic-input').style.display = 'block';
+});
+
+document.getElementById('submit-specific-topic').addEventListener('click', function() {
+    const topic = document.getElementById('specific-topic-text').value;
+    const prompt = `
+            What is ${topic}?
+            Explain ${topic} in simple terms suitable for a middle schooler, focusing on key concepts and their relevance.
+    
+            Key Concepts:
+            Describe any fundamental concepts or terms in a straightforward manner.
+    
+            Potential Applications:
+            List some practical or real world applications or implications in bullet points.
+            `; 
+    fetchChatGPTResponse(prompt).then(summary => {
+        document.getElementById('article-title').textContent = topic;
+        document.getElementById('article-summary').textContent = summary;
+        document.getElementById('welcome-screen').style.display = 'none';
+        document.getElementById('article-screen').style.display = 'block';
+    });
 });

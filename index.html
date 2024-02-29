@@ -15,6 +15,11 @@
         <div class="welcome-container">
             <button id="generate-article">Show Random Wikipedia Article</button>
             <button id="view-saved">View Saved Topics</button>
+            <button id="learn-specific-topic">Learn a Specific Topic</button>
+            <div id="specific-topic-input" style="display:none;">
+                <input type="text" id="specific-topic-text" placeholder="Enter a topic...">
+                <button id="submit-specific-topic">Learn</button>
+            </div>
         </div>
         
 
@@ -29,6 +34,11 @@
         <button id="save-article">Save Article</button>
         <button id="generate-another">Generate Another Article</button>
         <button id="back-to-main">Back to Main</button>
+        <!--<div id="chat-interface">
+            <textarea id="chat-input" placeholder="Ask me anything for a summary..."></textarea>
+            <button id="send-chat">Ask ChatGPT</button>
+        </div>
+        <div id="chat-output"></div>-->
     </div>
     
     <div id="saved-articles-screen" style="display: none;">
@@ -50,5 +60,6 @@
 </div>
 
     <script src="app.js"></script>
+
 </body>
 </html>
