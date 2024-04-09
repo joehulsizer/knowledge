@@ -1,12 +1,24 @@
+
 function resetToWelcomeScreen() {
     document.getElementById('article-screen').style.display = 'none';
     document.getElementById('saved-articles-screen').style.display = 'none';
     document.getElementById('welcome-screen').style.display = 'block';
+    document.getElementById('specific-topic-form').style.display = 'none';
+    document.getElementById('specific-topic-text').value = '';
+
+
+}
+
+function showLoadingScreen() {
+    document.getElementById('loading-screen').style.display = 'block';
+}
+
+function hideLoadingScreen() {
+    document.getElementById('loading-screen').style.display = 'none';
 }
 
 let chatSessionId = null;
 let chatHistory = [];
-
 // Set up event listeners only once, outside any other function
 document.getElementById('back-to-main').addEventListener('click', resetToWelcomeScreen);
 document.getElementById('back-to-main_saved').addEventListener('click', resetToWelcomeScreen);
@@ -46,15 +58,20 @@ document.getElementById('view-saved').addEventListener('click', function() {
         topicButton.addEventListener('click', function() {
             document.getElementById('saved-articles-screen').style.display = 'none';
             document.getElementById('article-title').textContent = article.title;
-            document.getElementById('article-summary').textContent = article.summary;
+        
+            // Apply formatting to the article summary before displaying it
+            let formattedSummary = formatSummaryText(article.summary);
+            document.getElementById('article-summary').innerHTML = article.summary;
+        
             document.getElementById('article-image1').src = article.image1 || '';
             document.getElementById('article-image2').src = article.image2 || '';
-
+        
             document.getElementById('article-image1').style.display = article.image1 ? 'block' : 'none';
             document.getElementById('article-image2').style.display = article.image2 ? 'block' : 'none';
-
+        
             document.getElementById('article-screen').style.display = 'block';
         });
+        
         savedArticlesContainer.appendChild(topicButton);
     });
 });
@@ -66,7 +83,7 @@ function formatSummaryText(summary) {
 
     lines.forEach(line => {
         // Check if the line is a header
-        if (line.match(/(Key Concepts:|Potential Applications:)/)) {
+        if (line.match(/(Key Concepts:|Relevance:)/)) {
             formattedText += `<strong>${line}</strong><br>`;
         // Check if the line is a list item
         } else if (line.startsWith('-')) {
@@ -94,95 +111,26 @@ function formatSummaryText(summary) {
 // Handle article generation and display
 function generateRandomArticle() {
     document.getElementById('welcome-screen').style.display = 'none';
-    document.getElementById('article-screen').style.display = 'block';
-    let images = []; // To store the image file names
-    document.getElementById('article-title').textContent = '';
-    document.getElementById('article-summary').textContent = '';
-    document.getElementById('article-image1').src = '';
-    document.getElementById('article-image1').style.display = 'none'; // Hide the image initially
-    document.getElementById('article-image2').src = '';
-    document.getElementById('article-image2').style.display = 'none'; // Hide the image initially
 
-    fetch('https://en.wikipedia.org/api/rest_v1/page/random/summary')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('article-title').textContent = data.title;
-            // Instead of setting the extract as the summary directly:
-            // document.getElementById('article-summary').textContent = data.extract;
-            // Use the title to generate a ChatGPT prompt:
-            const prompt = `
-            What is ${data.title}?
-            Explain ${data.title} in simple terms suitable for a middle schooler, focusing on key concepts and their relevance.
-    
-            Key Concepts:
-            Describe any fundamental concepts or terms in a straightforward manner.
-    
-            Potential Applications:
-            List some practical or real world applications or implications in bullet points.
-            `;            
-            return fetchChatGPTResponse(prompt).then(summary => {
-            document.getElementById('article-title').textContent = data.title;
-            let formattedSummary = formatSummaryText(summary);
-            document.getElementById('article-summary').innerHTML = formattedSummary;
-            return data;
-        })
-        .then(data => {
-            const title = data.title;
-            // Fetch images for title
-            return fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&format=json&pithumbsize=500&origin=*`);
-        })
-        .then(response => response.json())
-        .then(data => {
-            const pages = data.query.pages;
-            const page = pages[Object.keys(pages)[0]];
-            if (page.thumbnail) {
-                document.getElementById('article-image1').src = page.thumbnail.source;
-                document.getElementById('article-image1').style.display = 'block';
-            } else {
-                document.getElementById('article-image1').style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching images:', error);
-            document.getElementById('article-image1').style.display = 'none';
-        })
-        .then(response => response.json())
-        .then(data => {
-            const page = Object.values(data.query.pages)[0];
-            document.getElementById('article-image1').src = page.imageinfo[0].url;
-            document.getElementById('article-image1').style.display = 'block';
-
-            if (images.length > 1) {
-                return fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(images[1])}&prop=imageinfo&iiprop=url&format=json&origin=*`);
-            } else {
-                document.getElementById('article-image2').style.display = 'none';
-            }
-        })
-        .then(response => {
-            if (response) {
-                return response.json();
-            }
-        })
-        .then(data => {
-            if (data && images.length > 1) {
-                const page = Object.values(data.query.pages)[0];
-                document.getElementById('article-image2').src = page.imageinfo[0].url;
-                document.getElementById('article-image2').style.display = 'block';
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching images:', error);
-        });
-        document.getElementById('article-screen').style.display = 'block';
-
+    // Select a random topic
+    const categories = Object.keys(subjects);
+    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    const randomTopicList = subjects[randomCategory];
+    const randomTopic = randomTopicList[Math.floor(Math.random() * randomTopicList.length)];
+    const prompt = `Please generate a random topic related to the genre of ${randomTopic}, like if genre is sports then it could generate like what is basketball or what is cricket?`;
+    fetchChatGPTResponse(prompt).then(randomtopicgen => {
+        // Ensure this value is used after it's been set
+        fetchSummaryAndImages(randomtopicgen);
+    })
 }
-        )};
+        ;
 
 // Handle saving articles
 // Handle saving articles
 document.getElementById('save-article').addEventListener('click', function() {
     const title = document.getElementById('article-title').textContent;
-    const summary = document.getElementById('article-summary').textContent;
+    
+    const summary = document.getElementById('article-summary').innerHTML;
     const image1 = document.getElementById('article-image1').src;
     const image2 = document.getElementById('article-image2').style.display !== 'none' ? document.getElementById('article-image2').src : '';
 
@@ -215,25 +163,11 @@ document.getElementById('clear-topics').addEventListener('click', function() {
 
 
 // Add event listener for the ChatGPT interaction
-document.getElementById('send-chat').addEventListener('click', function() {
-    const inputElement = document.getElementById('chat-input');
-    const chatQuery = inputElement.value;
-    inputElement.value = ''; // Clear input after sending
 
-    if (chatQuery.trim()) {
-        fetchChatGPTResponse(chatQuery).then(response => {
-            document.getElementById('article-summary').textContent = response;
-            document.getElementById('article-screen').style.display = 'block';
-        }).catch(error => {
-            console.error('Error communicating with ChatGPT:', error);
-            alert('Sorry, I am unable to respond at the moment.');
-        });
-    }
-});
 
 // Function to fetch response from ChatGPT
 function fetchChatGPTResponse(message) {
-    const apiKey = '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'; // Replace with your actual API key
+    const apiKey = 'xxxxxxxx'; // Replace with your actual API key
     return fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -258,26 +192,143 @@ function fetchChatGPTResponse(message) {
     });
 }
 
+
+// Function for the Learn Specific Topic button
 document.getElementById('learn-specific-topic').addEventListener('click', function() {
-    document.getElementById('specific-topic-input').style.display = 'block';
+    document.getElementById('specific-topic-form').style.display = 'block';
 });
 
-document.getElementById('submit-specific-topic').addEventListener('click', function() {
-    const topic = document.getElementById('specific-topic-text').value;
-    const prompt = `
-            What is ${topic}?
-            Explain ${topic} in simple terms suitable for a middle schooler, focusing on key concepts and their relevance.
-    
-            Key Concepts:
-            Describe any fundamental concepts or terms in a straightforward manner.
-    
-            Potential Applications:
-            List some practical or real world applications or implications in bullet points.
-            `; 
-    fetchChatGPTResponse(prompt).then(summary => {
+document.getElementById('submit-specific-topic').addEventListener('click', learnSpecificTopic);
+
+function learnSpecificTopic() {
+    const topic = document.getElementById('specific-topic-text').value.trim();
+    if (!topic) {
+        alert('Please enter a topic.');
+        return;
+    }
+
+    fetchSummaryAndImages(topic);  // Fetch and display the information for the entered topic.
+}
+
+function fetchSummaryAndImages(topic) {
+    showLoadingScreen(); 
+    document.getElementById('welcome-screen').style.display = 'none';
+    document.getElementById('article-screen').style.display = 'block';
+    document.getElementById('article-title').textContent = '';
+    document.getElementById('article-summary').innerHTML = '';
+    document.getElementById('article-image1').src = '';
+    document.getElementById('article-image1').style.display = 'none';
+    document.getElementById('article-image2').src = '';
+    document.getElementById('article-image2').style.display = 'none';
+
+    const summaryPrompt = `In less than 200 words and avoiding the words "middle schooler":
+        What is ${topic}?
+        Explain ${topic} for a middle schooler, focusing on key concepts and their relevance.
+        
+        Key Concepts:
+        Describe any fundamental concepts or terms in a straightforward manner.
+        
+        Relevance:
+        List some applicable knowledge points, like famous people or events or examples of use or just quick notes that would allow me to be informed in a conversation about ${topic} in bullet points.
+    `;
+
+    fetchChatGPTResponse(summaryPrompt).then(summary => {
+        let formattedSummary = formatSummaryText(summary);
         document.getElementById('article-title').textContent = topic;
-        document.getElementById('article-summary').textContent = summary;
-        document.getElementById('welcome-screen').style.display = 'none';
-        document.getElementById('article-screen').style.display = 'block';
+        document.getElementById('article-summary').innerHTML = formattedSummary;
+        
+        // Fetch an image using Google's Custom Search JSON API
+        fetchImageFromGoogle(topic);
+    })
+    .finally(() => {
+        hideLoadingScreen();
     });
-});
+}
+
+// You should ensure that similar image fetching and displaying logic is used in generateRandomArticle.
+// The generateRandomArticle function should include proper logic to fetch and display images as done in fetchSummaryAndImages.
+function fetchImageFromGoogle(topic) {
+    const apiKey = 'xxxxxx';  // Replace with your actual API key.
+    const searchEngineId = 'e1330f0d708e64b76';  // Replace with your search engine ID.
+    const query = topic;
+    const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${searchEngineId}&searchType=image&key=${apiKey}&num=1`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.items && data.items.length > 0) {
+                const imageUrl = data.items[0].link;
+                document.getElementById('article-image1').src = imageUrl;
+                document.getElementById('article-image1').style.display = 'block';
+            } else {
+                console.log('No images found.');
+                document.getElementById('article-image1').style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching image:', error);
+            document.getElementById('article-image1').style.display = 'none';
+        });
+}
+// Add Learn More button functionality
+
+
+// Filename: extendArticle.js
+
+// Function to initialize Learn More button functionality
+function addLearnMoreButton() {
+    document.getElementById('learn-more').addEventListener('click', displayOptionsBox);
+}
+
+// Function to display options box for extending the article
+function displayOptionsBox() {
+    document.getElementById('options-box').style.display = 'block';
+}
+
+// Function to extend the article summary based on the selected option
+// This function now explicitly uses the current summary displayed on the page.
+function extendArticleSummary(option) {
+    let currentSummary = document.getElementById('article-summary').innerHTML;
+    
+    // Show loading screen while generating additional information
+    showLoadingScreen();
+
+    // The API call or processing should now use the currentSummary as a context or starting point
+    // for generating additional content. This is simulated as follows:
+    const extensionPromptDepth = `Given this summary: "${currentSummary}". Explain in the exactly same form at a high school level instead of the current middle school level of the given summary.`; // Placeholder for extension logic
+    const extensionPromptSimple = `Given this summary: "${currentSummary}". Explain in the exactly same form at a simpler level instead of the current middle school level of the given summary.`; // Placeholder for extension logic
+    const extensionPromptTalking = `Given this summary: "${currentSummary}". Explain in the exactly same form, with additional points in the relevance and talking points section.`; // Placeholder for extension logic
+    if(option == 'More In-Depth'){
+        extensionPrompt = extensionPromptDepth;
+    } else if(option == 'Explain Simpler'){
+        extensionPrompt = extensionPromptSimple;
+    }
+    else if(option == 'More Talking Points'){
+        extensionPrompt = extensionPromptTalking;
+    }
+
+    fetchChatGPTResponse(extensionPrompt).then(extendedContent => {
+        // Append the extended content to the current summary
+        let extendedformattedSummary = formatSummaryText(extendedContent);
+
+        let extendedSummary = extendedformattedSummary;
+
+        // Update the article summary with the extended information
+        document.getElementById('article-summary').innerHTML = extendedSummary;
+
+        // Hide loading screen after the content is updated
+        hideLoadingScreen();
+    }).catch(error => {
+        console.error('Error extending article:', error);
+        // Hide loading screen even if there's an error
+        hideLoadingScreen();
+    });
+}
+
+// Add event listeners for the options to extend the summary
+document.getElementById('explain-simpler').addEventListener('click', () => extendArticleSummary('Explain Simpler'));
+document.getElementById('more-in-depth').addEventListener('click', () => extendArticleSummary('More In-Depth'));
+document.getElementById('more-talking-points').addEventListener('click', () => extendArticleSummary('More Talking Points'));
+
+// Initialize the Learn More button when the page loads
+addLearnMoreButton();
