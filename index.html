@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Random Wikipedia Article</title>
+    <title>Learn a Random Topic</title>
     <link rel="stylesheet" href="knowl.css">
 </head>
 <body>
@@ -13,27 +13,42 @@
     </header>
     <div id="welcome-screen">
         <div class="welcome-container">
-            <button id="generate-article">Show Random Wikipedia Article</button>
+            <button id="generate-article">Learn Random Topic</button>
             <button id="view-saved">View Saved Topics</button>
             <button id="learn-specific-topic">Learn a Specific Topic</button>
-            <div id="specific-topic-input" style="display:none;">
-                <input type="text" id="specific-topic-text" placeholder="Enter a topic...">
-                <button id="submit-specific-topic">Learn</button>
+            <div id="specific-topic-form" style="display:none;">
+                <input type="text" id="specific-topic-text" placeholder="Enter a topic to learn about...">
+                <button id="submit-specific-topic">Submit</button>
             </div>
         </div>
         
 
     </div>
+    <div id="loading-screen" class="loading-screen">
+        <div class="spinner"></div>
+        <p>Please wait while we generate your increased knowledge...</p>
+    </div>
+    
     <div id="article-screen" style="display: none;">
         <h1 id="article-title"></h1>
         <p id="article-summary"></p> <!-- Element to display the article summary -->
+        <div id="notification" class="notification"></div>
         <div class="image-container">
             <img id="article-image1" src="" alt="Article Image 1">
             <img id="article-image2" src="" alt="Article Image 2">
         </div>
-        <button id="save-article">Save Article</button>
-        <button id="generate-another">Generate Another Article</button>
+        <button id="save-article">Save Topic</button>
+        <button id="generate-another">Generate Another Topic</button>
         <button id="back-to-main">Back to Main</button>
+        <button id="learn-more">Learn More</button>
+        <div id="options-box" style="display:none;">
+            <button id="explain-simpler">Explain Simpler</button>
+            <button id="more-in-depth">More In-Depth</button>
+            <button id="more-talking-points">More Talking Points</button>
+        </div>
+
+        </button>
+
         <!--<div id="chat-interface">
             <textarea id="chat-input" placeholder="Ask me anything for a summary..."></textarea>
             <button id="send-chat">Ask ChatGPT</button>
@@ -58,8 +73,9 @@
     </div>
     <button id="back-to-saved">Back to Saved Topics</button>
 </div>
-
+    <script src="subjects.js"></script>
     <script src="app.js"></script>
+    <script src="groq.js"></script> <!-- Link to the new ChatGPT integration script -->
 
 </body>
 </html>
