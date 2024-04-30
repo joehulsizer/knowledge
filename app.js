@@ -1,12 +1,11 @@
 
+
 function resetToWelcomeScreen() {
     document.getElementById('article-screen').style.display = 'none';
     document.getElementById('saved-articles-screen').style.display = 'none';
     document.getElementById('welcome-screen').style.display = 'block';
     document.getElementById('specific-topic-form').style.display = 'none';
     document.getElementById('specific-topic-text').value = '';
-
-
 }
 
 function showLoadingScreen() {
@@ -110,6 +109,8 @@ function formatSummaryText(summary) {
 }
 // Handle article generation and display
 function generateRandomArticle() {
+    let difficulty = localStorage.getItem('selectedDifficulty') || 'middle';  // Default to 'middle' if not set
+    document.getElementById('difficulty-level').value = difficulty;
     document.getElementById('welcome-screen').style.display = 'none';
 
     // Select a random topic
@@ -118,11 +119,17 @@ function generateRandomArticle() {
     const randomTopicList = subjects[randomCategory];
     const randomTopic = randomTopicList[Math.floor(Math.random() * randomTopicList.length)];
     const prompt = `Please generate a random topic related to the genre of ${randomTopic}, like if genre is sports then it could generate like what is basketball or what is cricket?`;
+
+    // Save the topic to localStorage for reuse
+    localStorage.setItem('currentTopic', randomTopic);
+
     fetchChatGPTResponse(prompt).then(randomtopicgen => {
         // Ensure this value is used after it's been set
         fetchSummaryAndImages(randomtopicgen);
-    })
+    });
 }
+
+
         ;
 
 // Handle saving articles
@@ -167,7 +174,7 @@ document.getElementById('clear-topics').addEventListener('click', function() {
 
 // Function to fetch response from ChatGPT
 function fetchChatGPTResponse(message) {
-    const apiKey = 'xxxxxxxx'; // Replace with your actual API key
+    const apiKey = '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'; // Replace with your actual API key
     return fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -191,6 +198,9 @@ function fetchChatGPTResponse(message) {
         return `API Error: ${error.message}`;
     });
 }
+document.getElementById('difficulty-level').addEventListener('change', function() {
+    localStorage.setItem('selectedDifficulty', this.value);
+});
 
 
 // Function for the Learn Specific Topic button
@@ -220,10 +230,25 @@ function fetchSummaryAndImages(topic) {
     document.getElementById('article-image1').style.display = 'none';
     document.getElementById('article-image2').src = '';
     document.getElementById('article-image2').style.display = 'none';
-
-    const summaryPrompt = `In less than 200 words and avoiding the words "middle schooler":
+    let difficulty = document.getElementById('difficulty-level').value;
+    let difficultyText = '';
+    switch (difficulty) {
+        case 'elementary':
+            difficultyText = 'an elementary school student';
+            break;
+        case 'middle':
+            difficultyText = 'a middle school student';
+            break;
+        case 'high':
+            difficultyText = 'a high school student';
+            break;
+        case 'college':
+            difficultyText = 'a college student';
+            break;
+    }
+    const summaryPrompt = `In less than 200 words and beginning with saying difficulty level is for ${difficultyText}:
         What is ${topic}?
-        Explain ${topic} for a middle schooler, focusing on key concepts and their relevance.
+        Explain ${topic} for ${difficultyText}, focusing on key concepts and their relevance.
         
         Key Concepts:
         Describe any fundamental concepts or terms in a straightforward manner.
@@ -248,7 +273,7 @@ function fetchSummaryAndImages(topic) {
 // You should ensure that similar image fetching and displaying logic is used in generateRandomArticle.
 // The generateRandomArticle function should include proper logic to fetch and display images as done in fetchSummaryAndImages.
 function fetchImageFromGoogle(topic) {
-    const apiKey = 'xxxxxx';  // Replace with your actual API key.
+    const apiKey = 'AIzaSyD7dpxeJoR1irPP1mYljevPrQN5HDcIjvM';  // Replace with your actual API key.
     const searchEngineId = 'e1330f0d708e64b76';  // Replace with your search engine ID.
     const query = topic;
     const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${searchEngineId}&searchType=image&key=${apiKey}&num=1`;
@@ -328,7 +353,131 @@ function extendArticleSummary(option) {
 // Add event listeners for the options to extend the summary
 document.getElementById('explain-simpler').addEventListener('click', () => extendArticleSummary('Explain Simpler'));
 document.getElementById('more-in-depth').addEventListener('click', () => extendArticleSummary('More In-Depth'));
-document.getElementById('more-talking-points').addEventListener('click', () => extendArticleSummary('More Talking Points'));
 
 // Initialize the Learn More button when the page loads
 addLearnMoreButton();
+// Initialize difficulty settings
+let difficultyLevel = {
+    'elementary': 1,
+    'middle': 2,
+    'high': 3,
+    'college': 4
+};
+
+// Convert the difficulty from string to number for easier manipulation
+function updateDifficulty(direction) {
+    let currentDifficulty = localStorage.getItem('selectedDifficulty') || 'middle';
+    let currentLevel = difficultyLevel[currentDifficulty];
+    
+    if (direction === 'increase' && currentLevel < 4) {
+        currentLevel++;
+    } else if (direction === 'decrease' && currentLevel > 1) {
+        currentLevel--;
+    }
+
+    // Find the difficulty as a string based on the updated level number
+    for (let key in difficultyLevel) {
+        if (difficultyLevel[key] === currentLevel) {
+            localStorage.setItem('selectedDifficulty', key);
+            document.getElementById('difficulty-level').value = key;
+            break;
+        }
+    }
+}
+
+// Event listener for changing difficulty
+document.getElementById('more-in-depth').addEventListener('click', function() {
+    updateDifficulty('increase');
+    extendArticleSummary('More In-Depth'); // Assuming this function refreshes the content
+});
+
+// Similarly, you can decrease the difficulty
+document.getElementById('explain-simpler').addEventListener('click', function() {
+    updateDifficulty('decrease');
+    extendArticleSummary('Explain Simpler'); // Assuming this function refreshes the content
+});
+// Adding an event listener for 'generate-similar' button
+document.getElementById('generate-similar').addEventListener('click', generateSimilarArticle);
+
+function generateSimilarArticle() {
+    console.log('generateSimilarArticle function called'); // Debugging log
+    let topic = localStorage.getItem('currentTopic');
+    if (!topic) {
+        alert('No topic found. Please generate an article first.');
+        return;
+    }
+
+    let prompt = `Please generate a similar random topic related to the genre of ${topic}, like if the genre is sports then it could generate topics like what is basketball or what is cricket?`;
+
+    fetchChatGPTResponse(prompt).then(similarTopic => {
+        console.log('API Response:', similarTopic); // Debugging log
+        if (!similarTopic.trim()) {
+            console.error('API returned an empty topic.');
+            alert('Failed to generate a similar topic. Please try again.');
+            return;
+        }
+        fetchSummaryAndImages(similarTopic);
+    }).catch(error => {
+        console.error('Failed to fetch a similar topic from ChatGPT:', error);
+        alert('Failed to generate a similar article. Please check your network connection and try again.');
+    });
+}
+document.getElementById('learn-bullet-points').addEventListener('click', makeBulletsSelectable);
+
+function makeBulletsSelectable() {
+    let summaryParagraphs = document.getElementById('article-summary').querySelectorAll('li');
+    summaryParagraphs.forEach((paragraph, index) => {
+        let checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'bullet-' + index;
+        checkbox.className = 'bullet-checkbox';
+        checkbox.value = paragraph.textContent;
+
+        let label = document.createElement('label');
+        label.htmlFor = 'bullet-' + index;
+        label.textContent = paragraph.textContent;
+
+        // Insert checkbox before the paragraph content
+        paragraph.textContent = '';
+        paragraph.appendChild(checkbox);
+        paragraph.appendChild(label);
+    });
+
+    // Add a button to generate detailed topic
+    let generateButton = document.createElement('button');
+    generateButton.textContent = 'Generate from Bullet';
+    generateButton.addEventListener('click', generateFromBullet);
+    document.getElementById('article-summary').appendChild(generateButton);
+}
+
+function generateFromBullet() {
+    let selectedBullets = document.querySelectorAll('.bullet-checkbox:checked');
+    if (selectedBullets.length === 0) {
+        alert('Please select at least one bullet point.');
+        return;
+    }
+
+    let bulletText = selectedBullets[0].value;
+    let firstPrompt = `Extract the main topic or entity from this detail: "${bulletText}"? that would be fitting for a Who is __ or What is ___ question. For example, from the input 'Crisis management can save a company's reputation, like in the case of Johnson & Johnson's Tylenol contamination incident in 1982. The company's effective response saved its image.', the output could be: Johnson & Johnson's Tylenol contamination incident. or it could be: Johnson & Johnson.  Your output should only include the topic as a standalone idea do not base it on the overall bullet point. For example if this bullet point: You could talk about how effective moderation promotes healthy online spaces. For example, 'Roblox' has strict moderation rules to protect its young user
+    base." was inputted, your output should be: Roblox. It should not be: Roblox moderation rules. And So output like: Johnson & Johnson's Tylenol contamination incident., not like "Main topic:" or "The main topic is" `;
+
+    fetchChatGPTResponse(firstPrompt).then(topicFromBullet => {
+        // Treat the result as a specific topic and fetch details in the same manner
+        processAsSpecificTopic(topicFromBullet.trim());
+    }).catch(error => {
+        console.error('Error extracting topic from bullet:', error);
+        alert('Failed to process the bullet point. Please try again.');
+        hideLoadingScreen();
+    });
+}
+
+function processAsSpecificTopic(topic) {
+    if (!topic) {
+        alert('No valid topic extracted. Please try another bullet point.');
+        return;
+    }
+
+    showLoadingScreen();
+    fetchSummaryAndImages(topic);  // This function will handle the topic as if it was input directly into the 'Learn a Specific Topic' form
+}
+
